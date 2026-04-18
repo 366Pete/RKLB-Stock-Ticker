@@ -8,7 +8,7 @@ Time is shown in **Central Time (12-hour AM/PM)**.
 
 The display runs quietly with very low power consumption and starts automatically on boot.
 
-![RKLB e-Ink Ticker]([https://i.imgur.com/rO408mU.jpeg](https://i.imgur.com/rO408mU.jpeg)) 
+![RKLB e-Ink Ticker] https://i.imgur.com/rO408mU.jpeg
 
 ## Hardware Used
 
