@@ -7,8 +7,9 @@ It updates every **3 minutes** during regular market hours and every **15 minute
 Time is shown in **Central Time (12-hour AM/PM)**.
 
 The display runs quietly with very low power consumption and starts automatically on boot.
+<img width="3072" height="4080" alt="PXL_20260420_152900859" src="https://github.com/user-attachments/assets/bdf51e75-23e8-4a4f-af5b-29aafd5ad51d" />
 
-![RKLB e-Ink Ticker] https://i.imgur.com/rO408mU.jpeg <img width="880" height="1168" alt="image (3)" src="https://github.com/user-attachments/assets/669ffd8d-635d-4daf-b465-5e64549aa8b2" />
+
 
 
 ## Hardware Used
@@ -79,23 +80,30 @@ logging.basicConfig(level=logging.INFO)
 def get_stock_data():
     try:
         ticker = yf.Ticker("RKLB")
-        df = ticker.history(period="2d", interval="5m", prepost=True)
         
-        if df.empty:
-            price = ticker.fast_info.get('lastPrice') or ticker.info.get('currentPrice')
-            prev_close = ticker.fast_info.get('previousClose')
-        else:
-            latest = df.iloc[-1]
-            price = round(float(latest['Close']), 2)
-            regular_df = df[df.index.hour < 16]
-            prev_close = regular_df.iloc[-1]['Close'] if not regular_df.empty else None
+        # Try to get current price (works well for extended hours)
+        price = ticker.fast_info.get('lastPrice')
+        if price is None:
+            price = ticker.info.get('currentPrice')
+        
+        # Get the proper previous regular close (more reliable)
+        prev_close = ticker.fast_info.get('previousClose')
+        if prev_close is None:
+            prev_close = ticker.info.get('regularMarketPreviousClose')
+        
+        # Fallback using history if needed
+        if prev_close is None or price is None:
+            df = ticker.history(period="5d", interval="1d")
+            if not df.empty:
+                price = round(float(df['Close'].iloc[-1]), 2)
+                prev_close = round(float(df['Close'].iloc[-2]), 2) if len(df) > 1 else price
         
         if price is None:
             return None, None
         
         price = round(float(price), 2)
         
-        if prev_close:
+        if prev_close and float(prev_close) > 0:
             change_pct = ((price - float(prev_close)) / float(prev_close)) * 100
             change_str = f"{change_pct:+.2f}%"
         else:
@@ -104,6 +112,7 @@ def get_stock_data():
         return price, change_str
     except Exception as e:
         logging.error(f"Data error: {e}")
+        return None, None
         return None, None
 
 def get_update_interval():
